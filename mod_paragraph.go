@@ -12,8 +12,9 @@ func (data *MarkdownInfo) convParagraph() {
 		data.html = append(data.html, "<p>")
 	}
 
-	// TODO: インライン解析
+	// インライン解析
+	inner := data.inlineConv(data.currentData.currentLine)
 
 	// 解析結果を追加
-	data.html = append(data.html, data.currentData.currentLine)
+	data.html = append(data.html, inner)
 }

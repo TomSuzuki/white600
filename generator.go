@@ -47,10 +47,10 @@ func (data *MarkdownInfo) convBlock() {
 		data.convParagraph()
 	case typeHeader:
 		data.convHeader()
-	// case typeTableBody:
-	// 	convData.closeTableBody()
-	// case typeTableHead:
-	// 	data.convTableHead()
+	case typeTableBody:
+		data.convTableBody()
+	case typeTableHead:
+		data.convTableHead()
 	case typeCode, typeCodeMarker:
 		data.convCode()
 	case typeList:
@@ -67,10 +67,10 @@ func (data *MarkdownInfo) closeBlock() {
 	switch data.previousData.lineType {
 	case typeParagraph:
 		data.closeParagraph()
-	// case typeTableBody:
-	// 	convData.closeTableBody()
-	// case typeTableHead:
-	// 	convData.closeTableHead()
+	case typeTableBody:
+		data.closeTableBody()
+	case typeTableHead:
+		data.closeTableHead()
 	case typeCode, typeCodeMarker:
 		data.closeCode()
 	case typeList:

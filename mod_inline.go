@@ -219,7 +219,8 @@ func inlineTag(inline []inlineObject) []inlineObject {
 
 					// オブジェクトを更新
 					isGenerated = true
-					nextInline := append(inline[:i], inlineObject{inlineType: x.inlineType, content: bf, child: &chobj})
+					nextInline := append(inline[:i], inlineObject{inlineType: inlineText, content: bf})
+					nextInline = append(nextInline, inlineObject{inlineType: x.inlineType, content: "", child: &chobj})
 					nextInline = append(nextInline, inlineObject{inlineType: inlineText, content: af})
 					nextInline = append(nextInline, inline[i+1:]...)
 					inline = nextInline

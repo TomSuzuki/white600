@@ -64,7 +64,7 @@ func (markdownInfo *MarkdownInfo) isList() bool {
 
 // isNone ...空行であるかを判定する。
 func (markdownInfo *MarkdownInfo) isNone() bool {
-	return strings.Trim(markdownInfo.currentData.currentLine, " ") == "" && markdownInfo.previousData.lineType != typeParagraph
+	return strings.Trim(markdownInfo.currentData.currentLine, " ") == "" // && markdownInfo.previousData.lineType != typeParagraph
 }
 
 // isQuote ...引用であるかを判定する。
