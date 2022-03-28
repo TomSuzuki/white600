@@ -1,75 +1,110 @@
 package white600
 
-// generator ...
-func generator(token []Token) string {
+import (
+	"strings"
+)
 
-	var html string
+// generator ...本体
+func generator(markdown string) string {
 
-	for _, v := range token {
-		html += generatorTag(v)
+	// 初期状態の生成
+	data := initInfo(markdown)
+
+	// 本体
+	for len(data.markdown) > 0 {
+		// 現在の行を処理
+		data.currentData = LineInfo{currentLine: data.markdown[0]}
+		data.currentData.lineType = data.getLineType()
+		data.currentData.isNewBlock = data.currentData.lineType != data.previousData.lineType
+		if len(data.markdown) > 1 {
+			data.currentData.nextLine = data.markdown[1]
+		}
+
+		// タイプが変わったらブロックを閉じる
+		if data.currentData.isNewBlock {
+			data.closeBlock()
+		}
+
+		// 現在の行を解析
+		data.convBlock()
+
+		// 次の行へ引き続き
+		data.previousData = data.currentData
+		data.markdown = data.markdown[1:]
+
 	}
 
-	return html
+	// ブロックを閉じる処理
+	data.closeBlock()
+
+	return strings.Join(data.html, "")
 }
 
-// generatorTag ...
-func generatorTag(token Token) string {
-	switch token.elementType {
-	case typeText:
-		return token.content
-	case typeBreak:
-		return "<br>"
-	case typeBlockCodeOpen:
-		return "<pre><code>"
-	case typeBlockCodeClose:
-		return "</code></pre>"
-	case typeListBlockOpen:
-		return "<ul>"
-	case typeListBlockClose:
-		return "</ul>"
-	case typeNumberListOpen:
-		return "<ol>"
-	case typeNumberListClose:
-		return "</ol>"
+// convBlock ...ブロックを解析
+func (data *MarkdownInfo) convBlock() {
+	switch data.currentData.lineType {
+	case typeParagraph:
+		data.convParagraph()
+	case typeHeader:
+		data.convHeader()
+	// case typeTableBody:
+	// 	convData.closeTableBody()
+	// case typeTableHead:
+	// 	data.convTableHead()
+	case typeCode, typeCodeMarker:
+		data.convCode()
 	case typeList:
-		return "<li>"
-	case typeListClose:
-		return "</li>"
-	case typeHeader1:
-		return "<h1>" + token.content + "</h1>"
-	case typeHeader2:
-		return "<h2>" + token.content + "</h2>"
-	case typeHeader3:
-		return "<h3>" + token.content + "</h3>"
-	case typeHeader4:
-		return "<h4>" + token.content + "</h4>"
-	case typeBoldOpen:
-		return "<strong>"
-	case typeBoldClose:
-		return "</strong>"
-	case typeCancellationOpen:
-		return "<s>"
-	case typeCancellationClose:
-		return "</s>"
-	case typeItalicOpen:
-		return "<em>"
-	case typeItalicClose:
-		return "</em>"
-	case typeCodeOpen:
-		return "<code>"
-	case typeCodeClose:
-		return "</code>"
+		data.convList()
+	case typeQuote:
+		data.convQuote()
 	case typeHorizon:
-		return "<hr>"
-	case typeLink:
-		return "<a href='" + token.content + "'>"
-	case typeLinkClose:
-		return "</a>"
-	case typeParagraphOpen:
-		return "<p>"
-	case typeParagraphClose:
-		return "</p>"
+		data.convHorizon()
 	}
+}
 
-	return ""
+// closeBlock ...ブロックを閉じる
+func (data *MarkdownInfo) closeBlock() {
+	switch data.previousData.lineType {
+	case typeParagraph:
+		data.closeParagraph()
+	// case typeTableBody:
+	// 	convData.closeTableBody()
+	// case typeTableHead:
+	// 	convData.closeTableHead()
+	case typeCode, typeCodeMarker:
+		data.closeCode()
+	case typeList:
+		data.closeList()
+	case typeQuote:
+		data.closeQuote()
+	}
+}
+
+// shiftLine ...現在の行に空行を挿入する。
+func (data *MarkdownInfo) shiftLine() {
+	data.markdown = append([]string{""}, data.markdown...)
+	data.currentData.nextLine = data.currentData.currentLine
+	data.currentData.currentLine = ""
+}
+
+// initInfo ...状態の初期化処理
+func initInfo(markdown string) MarkdownInfo {
+	return MarkdownInfo{
+		markdown: append(strings.Split(strings.NewReplacer("\r\n", "\n", "\r", "\n").Replace(markdown), "\n"), ""),
+		html:     []string{},
+		currentData: LineInfo{
+			lineType:    typeNone,
+			currentLine: "",
+			nextLine:    "",
+		},
+		previousData: LineInfo{
+			lineType:    typeNone,
+			currentLine: "",
+			nextLine:    "",
+		},
+		options: Options{
+			listNest:   []string{},
+			tableAlign: []string{},
+		},
+	}
 }

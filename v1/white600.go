@@ -2,7 +2,8 @@ package white600
 
 func MarkdownToHTML(markdown string) string {
 
-	html := generator(markdown)
+	token := lexer(markdown)
+	html := generator(token)
 
 	return html
 }
