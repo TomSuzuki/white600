@@ -13,6 +13,7 @@ const (
 	inlineItalic
 	inlineCancel
 	inlineLink
+	inlineBreak
 )
 
 type inlineObject struct {
@@ -149,74 +150,63 @@ func inlineTagOpen(inlineType InlineType) string {
 	}
 }
 
+// 辞書用の型
+type dictInfo struct {
+	tag        string
+	inlineType InlineType
+	recursion  bool
+}
+
+// テキストのパターンと対応するタイプ（場所移動する）
+var dictionary = []dictInfo{
+	{tag: "`", inlineType: inlineCode, recursion: false},
+	{tag: "**", inlineType: inlineBold, recursion: true},
+	{tag: "__", inlineType: inlineBold, recursion: true},
+	{tag: "~~", inlineType: inlineCancel, recursion: true},
+	{tag: "*", inlineType: inlineItalic, recursion: true},
+	{tag: "_", inlineType: inlineItalic, recursion: true},
+}
+
 // inlineTag ...インラインの要素を解析
 func inlineTag(inline []inlineObject) []inlineObject {
 
-	// 辞書用の型
-	type dictInfo struct {
-		tag        string
-		inlineType InlineType
-		recursion  bool
-	}
+	for i := 0; i < len(inline); i++ {
+		v := inline[i]
 
-	// テキストのパターンと対応するタイプ（場所移動する）
-	dictionary := []dictInfo{
-		{tag: "`", inlineType: inlineCode, recursion: false},
-		{tag: "**", inlineType: inlineBold, recursion: true},
-		{tag: "__", inlineType: inlineBold, recursion: true},
-		{tag: "~~", inlineType: inlineCancel, recursion: true},
-		{tag: "*", inlineType: inlineItalic, recursion: true},
-		{tag: "_", inlineType: inlineItalic, recursion: true},
-	}
+		// 解析しない物を除外
+		if v.inlineType == inlineLink || v.inlineType == inlineCode {
+			continue
+		}
 
-	isGenerated := true
-	for isGenerated {
-		isGenerated = false
-
-		for i, v := range inline {
-
-			// 解析しない物を除外
-			if v.inlineType == inlineLink || v.inlineType == inlineCode {
-				continue
-			}
-
-			// 現在の要素を解析
-			t := v.content
-			for j := 0; j < len(t); j++ {
-				for _, x := range dictionary {
-					flg, ct, af := lexerInlineStart(v.content[j:], x.tag)
-					bf := v.content[:j]
-					if !flg {
-						continue
-					}
-
-					// 中のテキストを処理
-					chobj := []inlineObject{{inlineType: inlineText, content: ct}}
-					if x.recursion {
-						chobj = inlineTag(chobj)
-					}
-
-					// オブジェクトを更新
-					isGenerated = true
-					nextInline := append(inline[:i], inlineObject{inlineType: inlineText, content: bf})
-					nextInline = append(nextInline, inlineObject{inlineType: x.inlineType, content: "", child: &chobj})
-					nextInline = append(nextInline, inlineObject{inlineType: inlineText, content: af})
-					nextInline = append(nextInline, inline[i+1:]...)
-					inline = nextInline
-
-					break
+		// 現在の要素を解析
+		t := v.content
+		for j := 0; j < len(t); j++ {
+			for _, x := range dictionary {
+				flg, ct, af := lexerInlineStart(v.content[j:], x.tag)
+				bf := v.content[:j]
+				if !flg {
+					continue
 				}
 
-				if isGenerated {
-					break
+				// 中のテキストを処理
+				chobj := []inlineObject{{inlineType: inlineText, content: ct}}
+				if x.recursion {
+					chobj = inlineTag(chobj)
 				}
-			}
 
-			if isGenerated {
+				// 要素を間に追加
+				nextInline := append(inline[:i], inlineObject{inlineType: inlineText, content: bf})
+				nextInline = append(nextInline, inlineObject{inlineType: x.inlineType, content: "", child: &chobj})
+				nextInline = append(nextInline, inlineObject{inlineType: inlineText, content: af})
+				nextInline = append(nextInline, inline[i+1:]...)
+				inline = nextInline
+
+				// 現在の要素の解析を抜ける
+				j = len(t)
+
 				break
 			}
 		}
-
 	}
 
 	return inline
