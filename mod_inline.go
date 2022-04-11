@@ -179,12 +179,20 @@ func inlineTag(inline []inlineObject) []inlineObject {
 		}
 
 		// 現在の要素を解析
-		t := v.content
-		for j := 0; j < len(t); j++ {
+		for j := 0; j < len(v.content); j++ {
 			for _, x := range dictionary {
+				// 開始終了タグが存在するかをチェック
 				flg, ct, af := lexerInlineStart(v.content[j:], x.tag)
 				bf := v.content[:j]
 				if !flg {
+					// 改行が存在するかをチェック
+					if len(v.content[j:]) >= 2 && v.content[j:j+2] == "  " {
+						newContent := v.content[:j]
+						newContent += "<br>"
+						newContent += v.content[j+2:]
+						v.content = newContent
+						inline[i] = v
+					}
 					continue
 				}
 
@@ -202,7 +210,7 @@ func inlineTag(inline []inlineObject) []inlineObject {
 				inline = nextInline
 
 				// 現在の要素の解析を抜ける
-				j = len(t)
+				j = len(v.content)
 
 				break
 			}
